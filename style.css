@@ -1,0 +1,497 @@
+:root{
+    --void: #0b0d12;
+    --stone: #1c2029;
+    --stone-light: #2a2f3c;
+    --gold: #e3b23c;
+    --gold-bright: #ffd873;
+    --danger: #ff4d4d;
+    --text: #e8e6df;
+}
+
+*{
+    box-sizing: border-box;
+}
+
+body{
+    margin:0;
+    background: var(--void);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+
+#container{
+    position:relative;
+    width: 1200px;
+    height: 800px;
+    border: 2px solid var(--gold);
+    box-shadow: 0 0 40px rgba(227,178,60,0.15);
+    perspective: 600px;
+    overflow:hidden;
+    background: var(--void);
+}
+
+#world{
+    position: absolute;
+    width: inherit;
+    height: inherit;
+    transform-style: preserve-3d;
+}
+
+.square{
+    position:absolute;
+    background-size: cover;
+}
+
+.enemy{
+    background: radial-gradient(circle at 35% 30%, #8a1414, #1a0000 70%);
+    box-shadow:
+        0 0 25px 8px rgba(255,20,20,0.55),
+        0 0 55px 18px rgba(255,0,0,0.25);
+    clip-path: polygon(50% 0%, 61% 20%, 82% 15%, 78% 38%, 100% 50%, 78% 62%, 82% 85%, 61% 80%, 50% 100%, 39% 80%, 18% 85%, 22% 62%, 0% 50%, 22% 38%, 18% 15%, 39% 20%);
+    animation: pulse 0.7s ease-in-out infinite;
+}
+
+/* UPDATED: Custom styling class applied when enemy is stunned */
+.enemy.frozen {
+    background: radial-gradient(circle at 35% 30%, #1562a1, #001124 70%) !important;
+    box-shadow:
+        0 0 25px 8px rgba(30,144,255,0.75),
+        0 0 55px 18px rgba(0,0,255,0.35) !important;
+    animation: none !important;
+}
+
+.enemy::before, .enemy::after{
+    content:"";
+    position:absolute;
+    top: 38%;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #fff2c2;
+    box-shadow: 0 0 8px 3px rgba(255,240,180,0.9);
+    animation: flicker 1.4s steps(6) infinite;
+}
+
+.enemy::before{ left: 30%; }
+.enemy::after{ left: 58%; }
+
+@keyframes flicker{
+    0%, 40%, 100% { opacity: 1; }
+    45%, 50% { opacity: 0.1; }
+}
+
+@keyframes pulse{
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.5); }
+}
+
+#vignette{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index: 3;
+    opacity: 0;
+    box-shadow: inset 0 0 160px 40px rgba(200,0,0,0.9);
+    transition: opacity 0.2s ease-out;
+}
+
+.map{
+    box-shadow: inset 0 0 70px rgba(0,0,0,0.55);
+    border: 1px solid rgba(0,0,0,0.5);
+}
+
+.popup{
+    position:absolute;
+    color: var(--gold-bright);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 22px;
+    font-weight:bold;
+    text-shadow: 0 0 8px rgba(255,216,115,0.8);
+    animation: floatUp 0.8s ease-out forwards;
+    pointer-events:none;
+}
+
+@keyframes floatUp{
+    from{ opacity:1; }
+    to{ opacity:0; transform: translateY(-50px); }
+}
+
+#flash{
+    position:absolute;
+    inset:0;
+    background: var(--danger);
+    opacity:0;
+    pointer-events:none;
+    transition: opacity 0.1s ease-out;
+    z-index: 5;
+}
+
+#flash.active{
+    opacity:0.35;
+}
+
+#hud{
+    position:absolute;
+    top:16px;
+    left:16px;
+    right:76px;
+    display:none;
+    justify-content: space-between;
+    z-index: 4;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.hudItem{
+    background: rgba(28,32,41,0.85);
+    border: 1px solid var(--gold);
+    color: var(--text);
+    padding: 8px 18px;
+    border-radius: 4px;
+    font-size: 18px;
+    letter-spacing: 1px;
+}
+
+/* UPDATED: Dynamic status styling for HUD ability elements (shared by EMP + Dash) */
+.hudItem.ready {
+    color: var(--gold-bright);
+    border-color: var(--gold);
+    text-shadow: 0 0 8px rgba(227,178,60,0.5);
+}
+
+.hudItem.cooldown {
+    color: var(--danger);
+    border-color: var(--danger);
+    opacity: 0.6;
+}
+
+.hudItem.notarget {
+    color: #ffaa4d;
+    border-color: #ffaa4d;
+    opacity: 0.8;
+}
+
+#hudTimer.warning{
+    color: var(--danger);
+    border-color: var(--danger);
+    animation: pulse 0.5s ease-in-out infinite;
+}
+
+.compass{
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+
+#compassArrow{
+    display:inline-block;
+    color: var(--gold-bright);
+    transition: transform 0.1s linear;
+}
+
+.spark{
+    position:absolute;
+    width:8px;
+    height:8px;
+    background: var(--gold-bright);
+    border-radius:50%;
+    box-shadow: 0 0 10px 3px rgba(255,216,115,0.9);
+    animation: sparkOut 0.6s ease-out forwards;
+    pointer-events:none;
+}
+
+@keyframes sparkOut{
+    to{ transform: translate3d(var(--endx), var(--endy), var(--endz)) scale(0.2); opacity:0; }
+}
+
+#keyFlash{
+    position:absolute;
+    inset:0;
+    background: var(--gold-bright);
+    opacity:0;
+    pointer-events:none;
+    transition: opacity 0.15s ease-out;
+    z-index: 5;
+}
+
+#keyFlash.active{
+    opacity:0.25;
+}
+
+.menu{
+    position:absolute;
+    inset:0;
+    background:
+        radial-gradient(circle at 30% 20%, rgba(227,178,60,0.08), transparent 40%),
+        var(--stone);
+    display:none;
+}
+
+.title{
+    position:absolute;
+    top: 130px;
+    left:50%;
+    transform: translateX(-50%);
+    margin:0;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 64px;
+    letter-spacing: 6px;
+    color: var(--gold-bright);
+    text-shadow: 0 0 20px rgba(227,178,60,0.4);
+}
+
+.subtitle{
+    position:absolute;
+    top: 220px;
+    left:50%;
+    transform: translateX(-50%);
+    margin:0;
+    color: var(--text);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 16px;
+    opacity:0.8;
+}
+
+.button{
+    position:absolute;
+    left:50%;
+    transform: translateX(-50%);
+    width:500px;
+    height:100px;
+    background: linear-gradient(180deg, var(--stone-light), var(--stone));
+    border: 2px solid var(--gold);
+    border-radius: 6px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.button:hover{
+    box-shadow: 0 0 25px rgba(227,178,60,0.5);
+    transform: translateX(-50%) translateY(-2px);
+}
+
+.button p{
+    position:static;
+    transform:none;
+    font-size: 28px;
+    color: var(--gold-bright);
+    font-family: Georgia, serif;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+#button1{ top: 260px; }
+#button2{ top: 380px; }
+#button4{ top: 500px; }
+#buttonShop{ top: 620px; }
+
+.button.small{
+    width: 320px;
+    height: 70px;
+    position:relative;
+    left:50%;
+    margin-top: 24px;
+}
+
+.button.small p{
+    font-size: 20px;
+}
+
+.panel{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform: translate(-50%,-50%);
+    width: 700px;
+    max-height: 640px;
+    padding: 40px 50px;
+    background: rgba(11,13,18,0.6);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    text-align:center;
+    color: var(--text);
+    font-family: Georgia, serif;
+}
+
+.panel h2{
+    color: var(--gold-bright);
+    font-size: 36px;
+    letter-spacing: 2px;
+    margin-top:0;
+}
+
+.instructions{
+    position:static;
+    transform:none;
+    font-size: 18px;
+    line-height: 1.5;
+    font-family: 'Consolas', 'Courier New', monospace;
+    text-align:left;
+    display:inline-block;
+}
+
+.stats{
+    position:static;
+    transform:none;
+    font-size: 20px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    color: var(--gold);
+}
+
+#nameInput{
+    margin-top: 16px;
+    padding: 10px 14px;
+    font-size: 18px;
+    background: var(--stone-light);
+    border: 1px solid var(--gold);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Consolas', monospace;
+    text-align:center;
+}
+
+.scoreList{
+    text-align:left;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 18px;
+    padding-left: 24px;
+    max-height: 320px;
+    overflow-y:auto;
+}
+
+.scoreList li{
+    margin-bottom: 8px;
+    color: var(--text);
+}
+
+.scoreList li::marker{
+    color: var(--gold);
+}
+
+/* Difficulty select: stack the small buttons in normal document flow */
+.difficultyPanel .button.small{
+    display: block;
+}
+
+/* ---- Shop ---- */
+.panel.shopPanel{
+    max-height: 720px;
+    padding: 30px 50px;
+    overflow-y: auto;
+}
+
+.shopBank{
+    margin-bottom: 6px;
+}
+
+.shopList{
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 20px 0;
+}
+
+.shopItem{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: rgba(28,32,41,0.6);
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    padding: 14px 18px;
+    text-align: left;
+}
+
+.shopItemInfo{
+    min-width: 0;
+}
+
+.shopItemName{
+    margin: 0 0 4px 0;
+    color: var(--gold-bright);
+    font-size: 20px;
+    font-family: Georgia, serif;
+}
+
+.shopItemDesc{
+    margin: 0;
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    opacity: 0.8;
+}
+
+.shopBuyBtn{
+    flex-shrink: 0;
+    padding: 10px 18px;
+    background: linear-gradient(180deg, var(--stone-light), var(--stone));
+    border: 2px solid var(--gold);
+    border-radius: 4px;
+    color: var(--gold-bright);
+    font-family: Georgia, serif;
+    font-size: 15px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: box-shadow 0.15s, opacity 0.15s;
+}
+
+.shopBuyBtn:hover:not(:disabled){
+    box-shadow: 0 0 20px rgba(227,178,60,0.5);
+}
+
+.shopBuyBtn:disabled{
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+.shopBuyBtn.owned{
+    border-color: var(--text);
+    color: var(--text);
+    opacity: 0.6;
+}
+
+.dangerBtn{
+    margin-top: 16px;
+    border-color: var(--danger) !important;
+}
+
+.dangerBtn p{
+    color: var(--danger) !important;
+}
+
+/* ---- Mute button ---- */
+#muteButton{
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 20;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(28,32,41,0.85);
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    color: var(--gold-bright);
+    font-size: 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: box-shadow 0.15s, transform 0.15s;
+}
+
+#muteButton:hover{
+    box-shadow: 0 0 18px rgba(227,178,60,0.5);
+    transform: translateY(-1px);
+}
+
+#muteButton.isMuted{
+    border-color: var(--danger);
+    color: var(--danger);
+}

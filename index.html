@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Vault Run</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="container">
+        <div id="world"></div>
+
+        <div id="flash"></div>
+        <div id="keyFlash"></div>
+        <div id="vignette"></div>
+
+        <div id="muteButton">🔊</div>
+
+        <!-- UPDATED HUD: Added Ability Indicator -->
+        <div id="hud">
+            <div id="hudTimer" class="hudItem">60</div>
+            <div id="hudKeys" class="hudItem">Keys: 0/3</div>
+            <div id="hudCoins" class="hudItem">Coins: 0</div>
+            <div id="hudLives" class="hudItem">❤❤❤</div>
+            <div id="hudAbility" class="hudItem">⚡ READY (SPACE)</div>
+            <div id="hudAbility2" class="hudItem" style="display:none;">🌀 DASH READY (Q)</div>
+            <div id="hudCompass" class="hudItem compass"><span id="compassArrow">➤</span> Key</div>
+        </div>
+
+        <div id="menu1" class="menu" style="display:block">
+            <h1 class="title">Vault Run</h1>
+            <p class="subtitle">Navigate the maze. Dodge the guard. Beat the clock.</p>
+            <div id="button1" class="button"><p>Start Game</p></div>
+            <div id="button2" class="button"><p>Instructions</p></div>
+            <div id="button4" class="button"><p>Leaderboard</p></div>
+            <div id="buttonShop" class="button"><p>Shop</p></div>
+        </div>
+
+        <!-- UPDATED MENU 2: Revamped tutorial screen explaining the new gameplay mechanics -->
+        <div id="menu2" class="menu">
+            <div class="panel">
+                <h2>How to Play</h2>
+                <p class="instructions">
+                    <strong> MOVEMENT:</strong> W, A, S, D keys. Click screen to look.<br>
+                    <strong> DEFEND:</strong> Press <strong>SPACEBAR</strong> to blast an EMP shockwave that freezes the guard for 3 seconds!<br><br>
+                     <strong>MUTE:</strong> Press <strong>M</strong> or click the speaker icon (top-right) to mute/unmute sound.<br><br>
+                     <strong>GOAL:</strong> Find all 3 Keys using your compass helper arrow, collect coins for bonus points, and escape before time runs out!<br>
+                     <strong>BEWARE:</strong> The guard gets faster and angrier with every key you collect!
+                </p>
+                <div id="button3" class="button small"><p>Back</p></div>
+            </div>
+        </div>
+
+        <!-- UPDATED MENU 3: Added Skip & Menu Option -->
+        <div id="menu3" class="menu">
+            <div class="panel">
+                <h2>Vault Cleared</h2>
+                <p id="winStats" class="stats"></p>
+                <input type="text" id="nameInput" maxlength="10" placeholder="Enter your name">
+                <div id="button5" class="button small"><p>Save Score</p></div>
+                <div id="buttonSkip" class="button small" style="margin-top: 12px; background: linear-gradient(180deg, #2a2f3c, #1c2029);"><p>Skip Saving</p></div>
+            </div>
+        </div>
+
+        <div id="menu4" class="menu">
+            <div class="panel">
+                <h2>Leaderboard</h2>
+                <ol id="scoreList" class="scoreList"></ol>
+                <div id="button6" class="button small"><p>Back</p></div>
+            </div>
+        </div>
+
+        <div id="menu5" class="menu">
+            <div class="panel">
+                <h2>Caught</h2>
+                <p id="loseStats" class="stats">Out of time, or out of lives. The vault stays locked.</p>
+                <div id="button7" class="button small"><p>Try Again</p></div>
+            </div>
+        </div>
+
+        <!-- Difficulty Select: shown after "Start Game", before the tutorial -->
+        <div id="menu6" class="menu">
+            <div class="panel difficultyPanel">
+                <h2>Choose Difficulty</h2>
+                <p class="instructions" style="text-align:center;">Pick how many keys you need and how much time you get.</p>
+                <div id="buttonDiffEasy" class="button small"><p>Easy — 2 Keys / 60s</p></div>
+                <div id="buttonDiffNormal" class="button small"><p>Normal — 3 Keys / 40s</p></div>
+                <div id="buttonDiffHard" class="button small"><p>Hard — 5 Keys / 20s</p></div>
+                <div id="buttonDiffBack" class="button small" style="margin-top: 24px; background: linear-gradient(180deg, #2a2f3c, #1c2029);"><p>Back</p></div>
+            </div>
+        </div>
+
+        <!-- Pre-level Tutorial: quick control refresher right before the run starts -->
+        <div id="menu7" class="menu">
+            <div class="panel">
+                <h2>Before You Go...</h2>
+                <p class="instructions">
+                    <strong>MOVE:</strong> W, A, S, D. Click the screen to look around.<br>
+                    <strong>EMP:</strong> Press <strong>SPACE</strong> to freeze the guard — but only works if you can actually see it, and only once unlocked in the Shop!<br>
+                    <strong>DASH:</strong> Press <strong>Q</strong> for a burst of speed forward, if unlocked in the Shop.<br><br>
+                    <strong>MUTE:</strong> Press <strong>M</strong> anytime to mute/unmute sound.<br><br>
+                    Grab your keys, dodge the guard, and get out before time runs out. Good luck!
+                </p>
+                <div id="buttonTutorialGo" class="button small"><p>Let's Go!</p></div>
+                <div id="buttonTutorialBack" class="button small" style="margin-top: 12px; background: linear-gradient(180deg, #2a2f3c, #1c2029);"><p>Back</p></div>
+            </div>
+        </div>
+
+        <!-- Shop: spend banked coins on unlockable abilities and extra lives -->
+        <div id="menu8" class="menu">
+            <div class="panel shopPanel">
+                <h2>Shop</h2>
+                <p id="shopBank" class="stats shopBank">Coins: 0</p>
+                <div class="shopList" id="shopList">
+                    <div class="shopItem" id="shopItemEmp">
+                        <div class="shopItemInfo">
+                            <p class="shopItemName">⚡ EMP Blast</p>
+                            <p class="shopItemDesc">Freeze the guard for 3s (SPACE)</p>
+                        </div>
+                        <button class="shopBuyBtn" id="buttonBuyEmp">Buy — 50</button>
+                    </div>
+                    <div class="shopItem" id="shopItemDash">
+                        <div class="shopItemInfo">
+                            <p class="shopItemName">💨 Shadow Dash</p>
+                            <p class="shopItemDesc">Burst forward past danger (Q)</p>
+                        </div>
+                        <button class="shopBuyBtn" id="buttonBuyDash">Buy — 80</button>
+                    </div>
+                    <div class="shopItem" id="shopItemLife">
+                        <div class="shopItemInfo">
+                            <p class="shopItemName">❤ Extra Life</p>
+                            <p class="shopItemDesc">+1 max life (stacks up to 2)</p>
+                        </div>
+                        <button class="shopBuyBtn" id="buttonBuyLife">Buy — 60</button>
+                    </div>
+                </div>
+                <div id="buttonShopBack" class="button small"><p>Back</p></div>
+                <div id="buttonResetProgress" class="button small dangerBtn"><p>Reset Progress</p></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="menu.js"></script>
+</body>
+</html>
