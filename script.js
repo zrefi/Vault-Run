@@ -339,17 +339,23 @@ var hitSound = new Audio("Sounds/hit.mp3");
 var footstepSound = new Audio("Sounds/footstep.mp3");
 var enemyNearSound = new Audio("Sounds/enemyNear.mp3");
 var bgMusic = new Audio("Sounds/music.mp3");
+var tickSound = new Audio("Sounds/tick.mp3");
 enemyNearSound.loop = true;
 bgMusic.loop = true;
 footstepSound.volume = 0.45;
 bgMusic.volume = 0.25;
+
+// Countdown ticking — kicks in once time is running low, speeding up in the
+// final stretch for extra urgency
+var TIME_WARNING_THRESHOLD = 10; // seconds left before ticking starts
+var lastTickSlot = -1;
 
 var lastFootstepTime = 0;
 var ENEMY_NEAR_RANGE = 650; // start playing the proximity sound once the guard is this close
 
 var isMuted = localStorage.getItem("vaultMuted") === "true";
 function ApplyMute(){
-    [coinSound, keySound, hitSound, footstepSound, enemyNearSound, bgMusic].forEach(a => a.muted = isMuted);
+    [coinSound, keySound, hitSound, footstepSound, enemyNearSound, bgMusic, tickSound].forEach(a => a.muted = isMuted);
 }
 ApplyMute();
 
@@ -525,9 +531,23 @@ function update(){
                 let rad = pawn.ry * deg;
                 let fdx = -Math.sin(rad) * DASH_DISTANCE;
                 let fdz = -Math.cos(rad) * DASH_DISTANCE;
-                let dashed = ResolveCollision({x: pawn.x + fdx, z: pawn.z + fdz}, pawn.x, pawn.z, PLAYER_RADIUS);
-                pawn.x = dashed.x;
-                pawn.z = dashed.z;
+
+                // Dash covers 220px in one go, but walls are only 40px thick — jumping
+                // straight to the endpoint and resolving collision only there can land
+                // the player clean on the far side of a wall without ever overlapping
+                // it. Sub-stepping in small increments (smaller than wall thickness)
+                // and resolving collision each step means a wall always gets a chance
+                // to stop the player instead of being skipped over.
+                let dashSteps = 12;
+                let stepX = fdx / dashSteps, stepZ = fdz / dashSteps;
+                let cx = pawn.x, cz = pawn.z;
+                for (let s = 0; s < dashSteps; s++){
+                    let next = ResolveCollision({x: cx + stepX, z: cz + stepZ}, cx, cz, PLAYER_RADIUS);
+                    cx = next.x;
+                    cz = next.z;
+                }
+                pawn.x = cx;
+                pawn.z = cz;
                 lastDashUsed = now;
                 shakeMag = 14;
                 SpawnPopup(pawn.x, pawn.y - 20, pawn.z, "💨 DASH!");
@@ -832,6 +852,18 @@ function UpdateTimer(){
     let elapsed = (Date.now() - startTime) / 1000;
     timeLeft = Math.max(0, TOTAL_TIME - elapsed);
     if (timeLeft <= 0 && !gameOver) EndGame(false);
+
+    // Ticking speeds up (every 0.5s instead of every 1s) in the final 5 seconds
+    if (timeLeft > 0 && timeLeft <= TIME_WARNING_THRESHOLD && !gameOver){
+        let tickInterval = timeLeft <= 5 ? 0.5 : 1;
+        let tickSlot = Math.floor(timeLeft / tickInterval);
+        if (tickSlot !== lastTickSlot){
+            lastTickSlot = tickSlot;
+            tickSound.currentTime = 0;
+            tickSound.play().catch(() => {});
+        }
+    }
+
     UpdateHUD();
 }
 
@@ -839,8 +871,13 @@ function UpdateHUD(){
     let timerEl = document.getElementById("hudTimer");
     if (timerEl) {
         timerEl.textContent = Math.ceil(timeLeft);
-        timerEl.classList.toggle("warning", timeLeft <= 10);
+        timerEl.classList.toggle("warning", timeLeft <= TIME_WARNING_THRESHOLD);
     }
+
+    // Full-screen edge pulse so the low-time warning isn't easy to miss while
+    // focused on the maze rather than the HUD text
+    let timeWarnEl = document.getElementById("timeWarning");
+    if (timeWarnEl) timeWarnEl.classList.toggle("active", timeLeft > 0 && timeLeft <= TIME_WARNING_THRESHOLD);
     
     let keysEl = document.getElementById("hudKeys");
     if (keysEl) keysEl.textContent = "Keys: " + keysCollected + "/" + keysNeeded;
@@ -864,6 +901,9 @@ function EndGame(won){
 
     let hudEl = document.getElementById("hud");
     if (hudEl) hudEl.style.display = "none";
+
+    let timeWarnEl = document.getElementById("timeWarning");
+    if (timeWarnEl) timeWarnEl.classList.remove("active");
     
     if (won){
         // Coins only bank to the Shop on a successful escape
@@ -911,6 +951,10 @@ function ResetGame(){
     lastDashUsed = -999999;
     PressSpace = false;
     PressDash = false;
+    lastTickSlot = -1;
+
+    let timeWarnEl = document.getElementById("timeWarning");
+    if (timeWarnEl) timeWarnEl.classList.remove("active");
 
     CreateSquares(map, "map");
     CreateSquares(coins, "coin");
