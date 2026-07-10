@@ -896,6 +896,12 @@ function EndGame(won){
     gameOver = true;
     canlock = false;
     enemyNearSound.pause();
+    tickSound.pause();
+    tickSound.currentTime = 0;
+    tickSound.muted = true; // belt-and-suspenders: pause() can lose a race with an
+                             // in-flight play() promise in some browsers, letting the
+                             // tick start anyway once it resolves — muting can't be
+                             // raced like that, so this guarantees silence
     clearInterval(TimerGame);
     document.exitPointerLock();
 
@@ -952,6 +958,7 @@ function ResetGame(){
     PressSpace = false;
     PressDash = false;
     lastTickSlot = -1;
+    tickSound.muted = isMuted; // undo the hard-mute EndGame applies, respecting the player's mute toggle
 
     let timeWarnEl = document.getElementById("timeWarning");
     if (timeWarnEl) timeWarnEl.classList.remove("active");
