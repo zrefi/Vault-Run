@@ -14,7 +14,7 @@ var button4 = document.getElementById("button4");
 var button5 = document.getElementById("button5");
 var button6 = document.getElementById("button6");
 var button7 = document.getElementById("button7");
-var buttonSkip = document.getElementById("buttonSkip"); // Registered reference
+var buttonSkip = document.getElementById("buttonSkip"); // "skip saving score" button on the win screen
 
 var buttonShop = document.getElementById("buttonShop");
 var buttonDiffEasy = document.getElementById("buttonDiffEasy");
@@ -64,7 +64,7 @@ button7.onclick = function(){
     menu1.style.display = "block";
 }
 
-// Skip functionality handler to return directly back to main menu
+// go straight back to the main menu without saving a score
 buttonSkip.onclick = function(){
     menu3.style.display = "none";
     menu1.style.display = "block";

@@ -53,7 +53,7 @@ body{
     animation: pulse 0.7s ease-in-out infinite;
 }
 
-/* UPDATED: Custom styling class applied when enemy is stunned */
+/* blue tint and no more pulsing once the guard's frozen by EMP */
 .enemy.frozen {
     background: radial-gradient(circle at 35% 30%, #1562a1, #001124 70%) !important;
     box-shadow:
@@ -153,7 +153,7 @@ body{
     letter-spacing: 1px;
 }
 
-/* UPDATED: Dynamic status styling for HUD ability elements (shared by EMP + Dash) */
+/* ready / cooldown / no-target states for the EMP and Dash HUD boxes */
 .hudItem.ready {
     color: var(--gold-bright);
     border-color: var(--gold);
@@ -178,7 +178,7 @@ body{
     animation: pulse 0.5s ease-in-out infinite;
 }
 
-/* UPDATED: Full-screen edge pulse for low time remaining, paired with a ticking sound */
+/* red pulse across the whole screen when time's almost up - goes with the ticking sound */
 #timeWarning{
     position:absolute;
     inset:0;

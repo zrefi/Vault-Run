@@ -1,7 +1,7 @@
-//world variables
+// stuff used all over the place
 var deg = Math.PI/180;
 
-//player initation
+// the player object - just position + rotation
 class player{
     constructor(x,y,z,rx,ry){
         this.x = x;
@@ -316,7 +316,7 @@ var MouseY = 0;
 var lock = false;
 var canlock = false;
 
-// Tracker States for Ability Mechanics
+// space + dash ability key states
 var PressSpace = false;
 var PressDash = false;
 
@@ -399,18 +399,12 @@ document.addEventListener("mousemove", (event) => {
     MouseY = event.movementY;
 })
 
-// Resolves collisions by pushing the player out along whichever axis has the
-// smallest overlap with a wall's expanded (radius-padded) bounding box. This
-// checks the player's CURRENT position against each wall directly, rather than
-// inferring "which side" from last frame's position — the old approach could
-// fail to register a hit at all if you approached a wall at a steep diagonal,
-// letting you slip straight through the thickness.
-// Resolves collisions by pushing the player out along whichever axis has the
-// smallest overlap with a wall's expanded (radius-padded) bounding box. Runs
-// several passes: fixing the overlap against one wall can reveal a leftover
-// overlap with a neighboring wall at a corner/seam, so a single pass can let
-// the player creep through the join over several frames. Repeating a few times
-// converges to a position clear of every nearby wall.
+// Pushes the player back out of a wall along whichever axis has the smaller
+// overlap. Checks against the player's actual current position rather than
+// guessing from last frame, so hitting a wall at a steep angle can't just slip
+// through the thickness like it used to. Runs a few passes because fixing one
+// wall can uncover a small overlap with the wall next to it at a corner -
+// looping a few times settles the player somewhere clean of everything nearby.
 function ResolveCollision(pos, prevX, prevZ, radius){
     pos.x = Math.max(-MAP_BOUND, Math.min(MAP_BOUND, pos.x));
     pos.z = Math.max(-MAP_BOUND, Math.min(MAP_BOUND, pos.z));
@@ -473,14 +467,14 @@ function HasLineOfSight(x1, z1, x2, z2){
     return true;
 }
 
-// Process ability cooldown triggers inside physics cycle
+// Runs every frame - handles movement, both abilities, cooldown text on the HUD, camera shake.
 function update(){
     let currentSpeedMod = 1.0;
     let isMoving = PressLeft || PressRight || PressForward || PressBack;
 
-    // Protection Blast Trigger — requires the ability to be unlocked in the Shop
-    // AND the guard to actually be visible (in range + unobstructed by walls),
-    // so it can't be used blind as a free "always safe" panic button.
+    // EMP blast - only usable if it's been bought in the Shop, and only if the
+    // guard is actually visible (close enough + no wall in the way). Otherwise
+    // it'd just be a free panic button you could spam blind.
     let now = Date.now();
     let abilityEl = document.getElementById("hudAbility");
 
@@ -532,12 +526,12 @@ function update(){
                 let fdx = -Math.sin(rad) * DASH_DISTANCE;
                 let fdz = -Math.cos(rad) * DASH_DISTANCE;
 
-                // Dash covers 220px in one go, but walls are only 40px thick — jumping
-                // straight to the endpoint and resolving collision only there can land
-                // the player clean on the far side of a wall without ever overlapping
-                // it. Sub-stepping in small increments (smaller than wall thickness)
-                // and resolving collision each step means a wall always gets a chance
-                // to stop the player instead of being skipped over.
+                // Dash jumps 220px forward but walls are only 40px thick, so
+                // teleporting straight to the end point and only checking
+                // collision there could land you clean on the other side of a
+                // wall without ever touching it. Breaking it into small steps
+                // (each smaller than a wall) and checking collision every step
+                // means you can't skip over a wall like that anymore.
                 let dashSteps = 12;
                 let stepX = fdx / dashSteps, stepZ = fdz / dashSteps;
                 let cx = pawn.x, cz = pawn.z;
@@ -560,8 +554,20 @@ function update(){
         }
     }
 
-    let dx = ((PressRight - PressLeft) * Math.cos(pawn.ry * deg) - (PressForward - PressBack) * Math.sin(pawn.ry * deg)) * currentSpeedMod;
-    let dz = (-(PressRight - PressLeft) * Math.sin(pawn.ry * deg) - (PressForward - PressBack) * Math.cos(pawn.ry * deg)) * currentSpeedMod;
+    // Raw left/right and forward/back amounts before rotation is applied.
+    // Holding two keys at once (like W+A) adds both, which makes moving
+    // diagonally faster than moving straight - clamp the combined vector back
+    // down to normal speed so diagonal movement isn't a free speed boost.
+    let moveRight = PressRight - PressLeft;
+    let moveForward = PressForward - PressBack;
+    let moveMag = Math.sqrt(moveRight*moveRight + moveForward*moveForward);
+    if (moveMag > 5){
+        moveRight = (moveRight / moveMag) * 5;
+        moveForward = (moveForward / moveMag) * 5;
+    }
+
+    let dx = (moveRight * Math.cos(pawn.ry * deg) - moveForward * Math.sin(pawn.ry * deg)) * currentSpeedMod;
+    let dz = (-moveRight * Math.sin(pawn.ry * deg) - moveForward * Math.cos(pawn.ry * deg)) * currentSpeedMod;
     let drx = MouseY * 0.5;
     let dry = -MouseX * 0.5;
     MouseX = MouseY = 0;
@@ -898,10 +904,8 @@ function EndGame(won){
     enemyNearSound.pause();
     tickSound.pause();
     tickSound.currentTime = 0;
-    tickSound.muted = true; // belt-and-suspenders: pause() can lose a race with an
-                             // in-flight play() promise in some browsers, letting the
-                             // tick start anyway once it resolves — muting can't be
-                             // raced like that, so this guarantees silence
+    tickSound.muted = true; // extra safety - if pause() loses a race with a play() that
+                             // was still starting up, muting still guarantees it's silent
     clearInterval(TimerGame);
     document.exitPointerLock();
 
@@ -958,7 +962,7 @@ function ResetGame(){
     PressSpace = false;
     PressDash = false;
     lastTickSlot = -1;
-    tickSound.muted = isMuted; // undo the hard-mute EndGame applies, respecting the player's mute toggle
+    tickSound.muted = isMuted; // un-mute after EndGame's hard mute, but still respect the mute button
 
     let timeWarnEl = document.getElementById("timeWarning");
     if (timeWarnEl) timeWarnEl.classList.remove("active");
